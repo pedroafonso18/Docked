@@ -1,0 +1,13 @@
+[project]
+name = "Test Project"
+version = 1.0
+language = "C++" # Possible options : "C" or "C++"
+compiler = "default" 
+# Possible options: "G++", "MSVC", "CLANG", if not present will go with default
+standard = 17
+# Language standard, Possible options: 14, 17, 20, 23, 26, if not present will go with latest
+
+[dependencies]
+
+boost = "1.0"
+# Example, you put the name of the library, and the version number.
