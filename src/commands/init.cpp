@@ -10,7 +10,7 @@ void CreateInitCommand(
 )
 {
     description.add_options()
-        ("init", "Create a new Docked project")
+        ("init", boost::program_options::value<std::string>()->default_value("."), "Project path")
         ("name", boost::program_options::value<std::string>(), "Project name");
 }
 
@@ -29,8 +29,27 @@ void ExecuteInitCommand(
 
     fs::create_directories(projectDirectory / "src");
 
-    std::ofstream(projectDirectory / "docked.toml");
+    auto dockedConfigFile = std::ofstream(projectDirectory / "docked.toml");
     std::ofstream(projectDirectory / "src" / "main.cpp");
+
+    std::ifstream exampleConfigFile("../docked.example.toml");
+    if (exampleConfigFile.is_open()) {
+        std::string line;
+        bool skipDependencies = false;
+
+        while (std::getline(exampleConfigFile, line)) {
+            if (line.find("[dependencies]") != std::string::npos) {
+                skipDependencies = true;
+                continue;
+            }
+
+            if (skipDependencies) {
+                continue;
+            }
+
+            dockedConfigFile << line << '\n';
+        }
+    }
 }
 
 }

@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
         return 0;
     }
     if (vm.count("init")) {
-        const std::string path = vm["path"].as<std::string>();
+        const std::string path = vm["init"].as<std::string>();
 
         std::optional<std::string> name;
 
