@@ -24,7 +24,10 @@ class Config {
     
         ~Config() = default;
 
+        ConfigValues GetValues();
+
     private:
+        ConfigValues values;
 };
 
 #endif 

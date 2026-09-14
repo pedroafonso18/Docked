@@ -16,7 +16,8 @@ namespace ConfigVariables {
     typedef enum Compiler {
         CLANG,
         GCC,
-        MSVC
+        MSVC,
+        DEFAULT
     };
 
     typedef enum Standard {
