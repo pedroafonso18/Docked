@@ -8,25 +8,25 @@ namespace Constants {
 };
 
 namespace ConfigVariables {
-    typedef enum ProjectLanguage {
+    enum ProjectLanguage {
         CPP,
         C
     };
 
-    typedef enum Compiler {
+    enum Compiler {
         CLANG,
         GCC,
         MSVC,
         DEFAULT
     };
 
-    typedef enum Standard {
+    enum Standard {
         FOURTEEN,
         SEVENTEEN,
         TWENTY,
         TWENTY_THREE,
         TWENTY_SIX
     };
-};
+}
 
 #endif

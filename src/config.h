@@ -5,14 +5,12 @@
 #include <vector>
 #include "constants.h"
 
-using namespace ConfigVariables;
-
-typedef struct ConfigValues {
+struct ConfigValues {
     std::string ProjectName;
     double ProjectVersion;
-    ProjectLanguage ProjectLanguage;
-    Compiler Compiler;
-    Standard Standard;
+    ConfigVariables::ProjectLanguage ProjectLanguage;
+    ConfigVariables::Compiler Compiler;
+    ConfigVariables::Standard Standard;
     std::vector<std::string> Dependencies;
 };
 

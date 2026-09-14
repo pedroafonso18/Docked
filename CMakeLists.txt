@@ -7,9 +7,13 @@ project(
 
 find_package(Boost REQUIRED COMPONENTS program_options)
 
+file(GLOB_RECURSE DOCKED_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+)
+
 add_executable(
     docked
-    src/main.cpp
+    ${DOCKED_SOURCES}
 )
 
 target_link_libraries(

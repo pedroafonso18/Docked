@@ -1,6 +1,8 @@
 #ifndef COMMANDS_INIT_H
 #define COMMANDS_INIT_H
 
+#include <optional>
+#include <string>
 #include <boost/program_options.hpp>
 
 namespace Commands {
