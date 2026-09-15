@@ -1,5 +1,5 @@
-#ifndef COMMANDS_INIT_H
-#define COMMANDS_INIT_H
+#ifndef COMMANDS_BUILD_H
+#define COMMANDS_BUILD_H
 
 #include <optional>
 #include <string>
@@ -7,14 +7,13 @@
 #include "../config.h"
 
 namespace Commands {
-    void CreateInitCommand(
+    void CreateBuildCommand(
         boost::program_options::options_description& description
     );
 
-    void ExecuteInitCommand(
+    void ExecuteBuildCommand(
         const std::string& projectPath,
-        const std::optional<std::string>& projectName,
-        const ConfigValues& config = ConfigValues{}
+        const ConfigValues& config
     );
 }
 

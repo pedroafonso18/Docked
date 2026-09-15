@@ -16,7 +16,8 @@ void CreateInitCommand(
 
 void ExecuteInitCommand(
     const std::string& projectPath,
-    const std::optional<std::string>& projectName
+    const std::optional<std::string>& projectName,
+    const ConfigValues& config
 )
 {
     namespace fs = std::filesystem;
@@ -50,6 +51,8 @@ void ExecuteInitCommand(
             dockedConfigFile << line << '\n';
         }
     }
+
+    (void)config;
 }
 
 }
