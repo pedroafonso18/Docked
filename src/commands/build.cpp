@@ -1,4 +1,5 @@
 #include "build.h"
+#include "../build.h"
 
 namespace Commands {
 
@@ -15,6 +16,6 @@ namespace Commands {
         const ConfigValues& config
     )
     {
-        
+        Build::Execute(config);
     }
 }

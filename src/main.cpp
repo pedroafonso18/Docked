@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
             ? Helpers::ParseConfigFile(configPath.string())
             : ConfigValues{};
 
-        Commands::ExecuteBuildCommand(projectPath, buildConfig);
+        Commands::ExecuteBuildCommand(buildConfig);
     }
 
     return 0;
