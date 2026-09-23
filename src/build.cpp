@@ -1,7 +1,30 @@
 #include "build.h"
 #include "constants.h"
+#include <cctype>
 #include <filesystem>
 #include <fstream>
+
+namespace {
+
+std::string SanitizeProjectName(
+    const std::string& name
+)
+{
+    std::string sanitized;
+    sanitized.reserve(name.size());
+
+    for (const unsigned char ch : name) {
+        if (std::isalnum(ch) || ch == '_' || ch == '-' || ch == '.') {
+            sanitized.push_back(static_cast<char>(ch));
+        } else {
+            sanitized.push_back('_');
+        }
+    }
+
+    return sanitized.empty() ? "project" : sanitized;
+}
+
+} // namespace
 
 bool Build::Execute(
     const ConfigValues& config
@@ -40,7 +63,7 @@ void Build::GenerateNinjaFile(const ConfigValues& config)
             break;
 
         default:
-            ninjaFile << DetectDefaultCompiler();
+            ninjaFile << "cxx = " << DetectDefaultCompiler() << '\n';
             break;
     }
 
@@ -95,7 +118,7 @@ void Build::GenerateNinjaFile(const ConfigValues& config)
         if (!entry.is_regular_file())
             continue;
 
-        if (entry.path().extension() != ".cpp" || entry.path().extension() != ".c")
+        if (entry.path().extension() != ".cpp" && entry.path().extension() != ".c")
             continue;
 
         const fs::path relativeSource =
@@ -128,8 +151,12 @@ void Build::GenerateNinjaFile(const ConfigValues& config)
 
     ninjaFile << '\n';
 
+    const std::string projectName = SanitizeProjectName(
+        config.ProjectName.empty() ? "project" : config.ProjectName
+    );
+
     ninjaFile << "build "
-              << config.ProjectName
+              << projectName
               << ": link";
 
     for (const std::string& object : objectFiles)
@@ -141,7 +168,7 @@ void Build::GenerateNinjaFile(const ConfigValues& config)
     ninjaFile << '\n';
 
     ninjaFile << "default "
-              << config.ProjectName
+              << projectName
               << '\n';
 }
 

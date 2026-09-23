@@ -12,7 +12,6 @@ namespace Commands {
     }
 
     void ExecuteBuildCommand(
-        const std::string& projectPath,
         const ConfigValues& config
     )
     {
