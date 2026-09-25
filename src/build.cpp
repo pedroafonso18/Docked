@@ -1,30 +1,9 @@
 #include "build.h"
 #include "constants.h"
+#include "helpers.h"
 #include <cctype>
 #include <filesystem>
 #include <fstream>
-
-namespace {
-
-std::string SanitizeProjectName(
-    const std::string& name
-)
-{
-    std::string sanitized;
-    sanitized.reserve(name.size());
-
-    for (const unsigned char ch : name) {
-        if (std::isalnum(ch) || ch == '_' || ch == '-' || ch == '.') {
-            sanitized.push_back(static_cast<char>(ch));
-        } else {
-            sanitized.push_back('_');
-        }
-    }
-
-    return sanitized.empty() ? "project" : sanitized;
-}
-
-} // namespace
 
 bool Build::Execute(
     const ConfigValues& config
@@ -73,23 +52,23 @@ void Build::GenerateNinjaFile(const ConfigValues& config)
 
     switch (config.Standard)
     {
-        case ConfigVariables::Standard::FOURTEEN:
+        case ConfigVariables::Standard::S_14:
             ninjaFile << "-std=c++14";
             break;
 
-        case ConfigVariables::Standard::SEVENTEEN:
+        case ConfigVariables::Standard::S_17:
             ninjaFile << "-std=c++17";
             break;
 
-        case ConfigVariables::Standard::TWENTY:
+        case ConfigVariables::Standard::S_20:
             ninjaFile << "-std=c++20";
             break;
 
-        case ConfigVariables::Standard::TWENTY_THREE:
+        case ConfigVariables::Standard::S_23:
             ninjaFile << "-std=c++23";
             break;
 
-        case ConfigVariables::Standard::TWENTY_SIX:
+        case ConfigVariables::Standard::S_26:
             ninjaFile << "-std=c++26";
             break;
 
@@ -151,7 +130,7 @@ void Build::GenerateNinjaFile(const ConfigValues& config)
 
     ninjaFile << '\n';
 
-    const std::string projectName = SanitizeProjectName(
+    const std::string projectName = Helpers::SanitizeProjectName(
         config.ProjectName.empty() ? "project" : config.ProjectName
     );
 

@@ -15,6 +15,10 @@ class Helpers {
         static ConfigValues ParseConfigFile(
             const std::string& path
         );
+
+        static std::string SanitizeProjectName(
+            const std::string& name
+        );
 };
 
 #endif

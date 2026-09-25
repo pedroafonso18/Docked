@@ -16,6 +16,13 @@ int main(int argc, char* argv[]) {
     Commands::CreateInitCommand(desc);
     Commands::CreateBuildCommand(desc);
 
+    Execute(argc, argv, desc);
+
+    return 0;
+}
+
+void Execute(int argc, char* argv[], options_description desc) {
+
     variables_map vm;
     store(parse_command_line(argc, argv, desc), vm);
     notify(vm);
@@ -23,7 +30,7 @@ int main(int argc, char* argv[]) {
 
     if (vm.count("help")) {
         std::cout << desc << '\n';
-        return 0;
+        return;
     }
 
     if (vm.count("init")) {
@@ -57,6 +64,4 @@ int main(int argc, char* argv[]) {
 
         Commands::ExecuteBuildCommand(buildConfig);
     }
-
-    return 0;
 }

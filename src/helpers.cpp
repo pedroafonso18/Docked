@@ -53,16 +53,15 @@ ConfigVariables::Standard ParseStandardInfo(
 {
     switch (standardValue) {
         case 14:
-            return ConfigVariables::FOURTEEN;
+            return ConfigVariables::S_14;
         case 17:
-            return ConfigVariables::SEVENTEEN;
+            return ConfigVariables::S_17;
         case 20:
-            return ConfigVariables::TWENTY;
+            return ConfigVariables::S_20;
         case 23:
-            return ConfigVariables::TWENTY_THREE;
-        case 26:
+            return ConfigVariables::S_23;
         default:
-            return ConfigVariables::TWENTY_SIX;
+            return ConfigVariables::S_26;
     }
 }
 
@@ -118,11 +117,29 @@ ConfigValues Helpers::ParseConfigFile(
         values.ProjectVersion = config["project"]["version"].value_or(0.0);
         values.ProjectLanguage = ParseProjectLanguageInfo(config["project"]["language"].value_or("C++"));
         values.Compiler = ParseCompilerInfo(config["project"]["compiler"].value_or("default"));
-        values.Standard = ParseStandardInfo(config["project"]["standard"].value_or(26));
+        values.Standard = ParseStandardInfo(config["project"]["standard"].value_or(ConfigVariables::S_26));
         values.Dependencies = ParseDependenciesInfo(config["dependencies"].as_table());
     } catch (const std::exception&) {
         return ConfigValues{};
     }
 
     return values;
+}
+
+std::string SanitizeProjectName(
+    const std::string& name
+)
+{
+    std::string sanitized;
+    sanitized.reserve(name.size());
+
+    for (const unsigned char ch : name) {
+        if (std::isalnum(ch) || ch == '_' || ch == '-' || ch == '.') {
+            sanitized.push_back(static_cast<char>(ch));
+        } else {
+            sanitized.push_back('_');
+        }
+    }
+
+    return sanitized.empty() ? "project" : sanitized;
 }

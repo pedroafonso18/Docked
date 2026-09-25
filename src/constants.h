@@ -21,11 +21,11 @@ namespace ConfigVariables {
     };
 
     enum Standard {
-        FOURTEEN,
-        SEVENTEEN,
-        TWENTY,
-        TWENTY_THREE,
-        TWENTY_SIX
+        S_14,
+        S_17,
+        S_20,
+        S_23,
+        S_26
     };
 }
 
