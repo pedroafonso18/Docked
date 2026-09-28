@@ -1,5 +1,6 @@
 #include "build.h"
 #include "constants.h"
+#include "dependencies.h"
 #include "helpers.h"
 #include <cctype>
 #include <filesystem>
@@ -9,6 +10,7 @@ bool Build::Execute(
     const ConfigValues& config
 )
 {
+    Dependencies::ResolveDependencies(config.Dependencies);
     GenerateNinjaFile(config);
     return ExecuteNinja();
 }

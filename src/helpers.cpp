@@ -65,20 +65,37 @@ ConfigVariables::Standard ParseStandardInfo(
     }
 }
 
-std::vector<std::string> ParseDependenciesInfo(
+std::vector<Dependency> ParseDependenciesInfo(
     const toml::table* dependenciesTable
 )
 {
-    std::vector<std::string> dependencies;
+    std::vector<Dependency> dependencies;
 
     if (dependenciesTable == nullptr) {
         return dependencies;
     }
 
-    for (const auto& [dependencyName, dependencyVersion] : *dependenciesTable) {
-        dependencies.push_back(
-            std::string(dependencyName.str()) + "=" + dependencyVersion.value_or("")
-        );
+    for (const auto& [_, dependencyNode] : *dependenciesTable) {
+        const auto* dependencyTable = dependencyNode.as_table();
+        if (dependencyTable == nullptr) {
+            continue;
+        }
+
+        Dependency dependency;
+
+        if (const auto* nameNode = (*dependencyTable)["name"].as_string()) {
+            dependency.dependencyName = nameNode->get();
+        }
+
+        if (const auto* urlNode = (*dependencyTable)["git_url"].as_string()) {
+            dependency.gitUrl = urlNode->get();
+        }
+
+        if (const auto* tagNode = (*dependencyTable)["git_tag"].as_string()) {
+            dependency.gitTag = tagNode->get();
+        }
+
+        dependencies.push_back(std::move(dependency));
     }
 
     return dependencies;
@@ -126,7 +143,7 @@ ConfigValues Helpers::ParseConfigFile(
     return values;
 }
 
-std::string SanitizeProjectName(
+std::string Helpers::SanitizeProjectName(
     const std::string& name
 )
 {

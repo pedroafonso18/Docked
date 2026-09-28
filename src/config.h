@@ -5,13 +5,19 @@
 #include <vector>
 #include "constants.h"
 
+struct Dependency {
+    std::string dependencyName;
+    std::string gitUrl;
+    std::string gitTag;
+};
+
 struct ConfigValues {
     std::string ProjectName;
     double ProjectVersion;
     ConfigVariables::ProjectLanguage ProjectLanguage;
     ConfigVariables::Compiler Compiler;
     ConfigVariables::Standard Standard;
-    std::vector<std::string> Dependencies;
+    std::vector<Dependency> Dependencies;
 };
 
 class Config {
