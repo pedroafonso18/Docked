@@ -9,59 +9,81 @@
 
 using namespace boost::program_options;
 
-int main(int argc, char* argv[]) {
-    std::cerr << "argc=" << argc << '\n';
-    if (argc > 1) {
-        std::cerr << "argv1=" << argv[1] << '\n';
+namespace {
+
+void PrintUsage()
+{
+    std::cout << "Docked\n\n"
+              << "Usage:\n"
+              << "  docked build\n"
+              << "  docked init [path] [--name project-name]\n"
+              << "  docked --help\n";
+}
+
+ConfigValues LoadConfigForPath(
+    const std::string& projectPath
+)
+{
+    const auto configPath = std::filesystem::path(projectPath) / Constants::CONFIG_FILE_NAME;
+
+    if (!std::filesystem::exists(configPath)) {
+        return ConfigValues{};
     }
 
-    options_description desc("Docked");
+    return Helpers::ParseConfigFile(configPath.string());
+}
 
-    Commands::CreateHelpCommand(desc);
-    Commands::CreateInitCommand(desc);
-    Commands::CreateBuildCommand(desc);
+} // namespace
 
-    variables_map vm;
-    store(parse_command_line(argc, argv, desc), vm);
-    notify(vm);
-    ConfigValues configValue = ConfigValues{};
-
-    if (vm.count("help")) {
-        std::cout << desc << '\n';
+int main(int argc, char* argv[]) {
+    if (argc <= 1) {
+        PrintUsage();
         return 0;
     }
 
-    if (vm.count("init")) {
-        const std::string path = vm["init"].as<std::string>();
+    const std::string command = argv[1];
+
+    if (command == "--help" || command == "-h" || command == "help") {
+        PrintUsage();
+        return 0;
+    }
+
+    if (command == "build") {
+        const ConfigValues buildConfig = LoadConfigForPath(".");
+        Commands::ExecuteBuildCommand(buildConfig);
+        return 0;
+    }
+
+    if (command == "init") {
+        options_description initDescription("Docked init");
+        Commands::CreateInitCommand(initDescription);
+
+        positional_options_description positional;
+        positional.add("init", 1);
+
+        std::vector<std::string> forwardedArguments(argv + 2, argv + argc);
+        variables_map vm;
+        store(
+            command_line_parser(forwardedArguments)
+                .options(initDescription)
+                .positional(positional)
+                .run(),
+            vm
+        );
+        notify(vm);
+
+        const std::string path = vm.count("init") ? vm["init"].as<std::string>() : ".";
 
         std::optional<std::string> name;
-
         if (vm.count("name")) {
             name = vm["name"].as<std::string>();
         }
 
-        std::filesystem::path projectDirectory = path;
-        if (name.has_value()) {
-            projectDirectory /= *name;
-        }
-
-        const auto configPath = projectDirectory / Constants::CONFIG_FILE_NAME;
-        if (std::filesystem::exists(configPath)) {
-            configValue = Helpers::ParseConfigFile(configPath.string());
-        }
-
-        Commands::ExecuteInitCommand(path, name, configValue);
+        Commands::ExecuteInitCommand(path, name, LoadConfigForPath(path));
+        return 0;
     }
 
-    if (vm.count("build")) {
-        const std::string projectPath = vm.count("init") ? vm["init"].as<std::string>() : ".";
-        const auto configPath = std::filesystem::path(projectPath) / Constants::CONFIG_FILE_NAME;
-        const ConfigValues buildConfig = std::filesystem::exists(configPath)
-            ? Helpers::ParseConfigFile(configPath.string())
-            : ConfigValues{};
-
-        Commands::ExecuteBuildCommand(buildConfig);
-    }
-
-    return 0;
+    std::cerr << "Unknown command: " << command << '\n';
+    PrintUsage();
+    return 1;
 }

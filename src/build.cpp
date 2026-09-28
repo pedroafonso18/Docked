@@ -5,13 +5,11 @@
 #include <cctype>
 #include <filesystem>
 #include <fstream>
-#include <iostream>
 
 bool Build::Execute(
     const ConfigValues& config
 )
 {
-    std::cout << "Dependencies found: " << config.Dependencies.size() << '\n';
     Dependencies::ResolveDependencies(config.Dependencies);
     GenerateNinjaFile(config);
     return ExecuteNinja();
