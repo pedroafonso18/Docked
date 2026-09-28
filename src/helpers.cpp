@@ -75,6 +75,29 @@ std::vector<Dependency> ParseDependenciesInfo(
         return dependencies;
     }
 
+    Dependency directDependency;
+    bool hasDirectDependency = false;
+
+    if (const auto* nameNode = (*dependenciesTable)["name"].as_string()) {
+        directDependency.dependencyName = nameNode->get();
+        hasDirectDependency = true;
+    }
+
+    if (const auto* urlNode = (*dependenciesTable)["git_url"].as_string()) {
+        directDependency.gitUrl = urlNode->get();
+        hasDirectDependency = true;
+    }
+
+    if (const auto* tagNode = (*dependenciesTable)["git_tag"].as_string()) {
+        directDependency.gitTag = tagNode->get();
+        hasDirectDependency = true;
+    }
+
+    if (hasDirectDependency) {
+        dependencies.push_back(std::move(directDependency));
+        return dependencies;
+    }
+
     for (const auto& [_, dependencyNode] : *dependenciesTable) {
         const auto* dependencyTable = dependencyNode.as_table();
         if (dependencyTable == nullptr) {

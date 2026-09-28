@@ -10,6 +10,11 @@
 using namespace boost::program_options;
 
 int main(int argc, char* argv[]) {
+    std::cerr << "argc=" << argc << '\n';
+    if (argc > 1) {
+        std::cerr << "argv1=" << argv[1] << '\n';
+    }
+
     options_description desc("Docked");
 
     Commands::CreateHelpCommand(desc);

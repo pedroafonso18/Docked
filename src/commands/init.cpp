@@ -43,18 +43,8 @@ void ExecuteInitCommand(
     std::ifstream exampleConfigFile(templatePath);
     if (exampleConfigFile.is_open()) {
         std::string line;
-        bool skipDependencies = false;
 
         while (std::getline(exampleConfigFile, line)) {
-            if (line.find("[dependencies]") != std::string::npos) {
-                skipDependencies = true;
-                continue;
-            }
-
-            if (skipDependencies) {
-                continue;
-            }
-
             dockedConfigFile << line << '\n';
         }
     } else {
