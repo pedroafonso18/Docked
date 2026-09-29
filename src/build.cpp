@@ -1,6 +1,7 @@
 #include "build.h"
 #include "constants.h"
 #include "dependencies.h"
+#include "errors.h"
 #include "helpers.h"
 #include <cctype>
 #include <filesystem>
@@ -31,15 +32,15 @@ void Build::GenerateNinjaFile(const ConfigValues& config)
 
     switch (config.Compiler)
     {
-        case ConfigVariables::Compiler::GCC:
+        case Compiler::GCC:
             ninjaFile << "cxx = g++\n";
             break;
 
-        case ConfigVariables::Compiler::CLANG:
+        case Compiler::CLANG:
             ninjaFile << "cxx = clang++\n";
             break;
 
-        case ConfigVariables::Compiler::MSVC:
+        case Compiler::MSVC:
             ninjaFile << "cxx = cl\n";
             break;
 
@@ -54,27 +55,24 @@ void Build::GenerateNinjaFile(const ConfigValues& config)
 
     switch (config.Standard)
     {
-        case ConfigVariables::Standard::S_14:
+        case Standard::S_14:
             ninjaFile << "-std=c++14";
             break;
 
-        case ConfigVariables::Standard::S_17:
+        case Standard::S_17:
             ninjaFile << "-std=c++17";
             break;
 
-        case ConfigVariables::Standard::S_20:
+        case Standard::S_20:
             ninjaFile << "-std=c++20";
             break;
 
-        case ConfigVariables::Standard::S_23:
+        case Standard::S_23:
             ninjaFile << "-std=c++23";
             break;
 
-        case ConfigVariables::Standard::S_26:
-            ninjaFile << "-std=c++26";
-            break;
-
         default:
+            ninjaFile << "-std=c++26";
             break;
     }
 
@@ -183,8 +181,7 @@ std::string Build::DetectDefaultCompiler()
             return "g++";
 
     #endif
-
-        throw; //Neste caso não tem o que fazer, o usuário não tem compilador.
+        throw NoAvailableCompiler();
 }
 
 bool Build::IsCompilerAvailable(

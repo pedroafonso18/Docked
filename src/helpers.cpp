@@ -17,51 +17,51 @@ std::string ToUpper(
     return value;
 }
 
-ConfigVariables::ProjectLanguage ParseProjectLanguageInfo(
+ProjectLanguage ParseProjectLanguageInfo(
     const std::string& languageString
 )
 {
     const std::string normalizedLanguage = ToUpper(languageString);
 
     if (normalizedLanguage == "C") {
-        return ConfigVariables::C;
+        return C;
     }
 
-    return ConfigVariables::CPP;
+    return CPP;
 }
 
-ConfigVariables::Compiler ParseCompilerInfo(
+Compiler ParseCompilerInfo(
     const std::string& compilerString
 )
 {
     const std::string normalizedCompiler = ToUpper(compilerString);
 
     if (normalizedCompiler == "CLANG") {
-        return ConfigVariables::CLANG;
+        return CLANG;
     } else if (normalizedCompiler == "GCC" || normalizedCompiler == "G++") {
-        return ConfigVariables::GCC;
+        return GCC;
     } else if (normalizedCompiler == "MSVC") {
-        return ConfigVariables::MSVC;
+        return MSVC;
     }
 
-    return ConfigVariables::DEFAULT;
+    return DEFAULT;
 }
 
-ConfigVariables::Standard ParseStandardInfo(
+Standard ParseStandardInfo(
     int standardValue
 )
 {
     switch (standardValue) {
         case 14:
-            return ConfigVariables::S_14;
+            return S_14;
         case 17:
-            return ConfigVariables::S_17;
+            return S_17;
         case 20:
-            return ConfigVariables::S_20;
+            return S_20;
         case 23:
-            return ConfigVariables::S_23;
+            return S_23;
         default:
-            return ConfigVariables::S_26;
+            return S_26;
     }
 }
 
@@ -157,7 +157,7 @@ ConfigValues Helpers::ParseConfigFile(
         values.ProjectVersion = config["project"]["version"].value_or(0.0);
         values.ProjectLanguage = ParseProjectLanguageInfo(config["project"]["language"].value_or("C++"));
         values.Compiler = ParseCompilerInfo(config["project"]["compiler"].value_or("default"));
-        values.Standard = ParseStandardInfo(config["project"]["standard"].value_or(ConfigVariables::S_26));
+        values.Standard = ParseStandardInfo(config["project"]["standard"].value_or(S_26));
         values.Dependencies = ParseDependenciesInfo(config["dependencies"].as_table());
     } catch (const std::exception&) {
         return ConfigValues{};

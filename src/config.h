@@ -5,24 +5,9 @@
 #include <vector>
 #include "constants.h"
 
-struct Dependency {
-    std::string dependencyName;
-    std::string gitUrl;
-    std::string gitTag;
-};
-
-struct ConfigValues {
-    std::string ProjectName;
-    double ProjectVersion;
-    ConfigVariables::ProjectLanguage ProjectLanguage;
-    ConfigVariables::Compiler Compiler;
-    ConfigVariables::Standard Standard;
-    std::vector<Dependency> Dependencies;
-};
-
 class Config {
     public:
-        Config(
+        explicit Config(
             const std::string& projectPath
         );
     
