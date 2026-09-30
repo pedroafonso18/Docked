@@ -14,19 +14,50 @@ void CreateInitCommand(
         ("name", boost::program_options::value<std::string>(), "Project name");
 }
 
+InitCommandOptions ParseInitCommandArguments(
+    const std::vector<std::string>& arguments
+)
+{
+    namespace po = boost::program_options;
+
+    po::options_description initDescription("Docked init");
+    CreateInitCommand(initDescription);
+
+    po::positional_options_description positional;
+    positional.add("init", 1);
+
+    po::variables_map variables;
+    po::store(
+        po::command_line_parser(arguments)
+            .options(initDescription)
+            .positional(positional)
+            .run(),
+        variables
+    );
+    po::notify(variables);
+
+    InitCommandOptions options;
+    options.projectPath = variables.count("init") ? variables["init"].as<std::string>() : ".";
+
+    if (variables.count("name")) {
+        options.projectName = variables["name"].as<std::string>();
+    }
+
+    return options;
+}
+
 void ExecuteInitCommand(
-    const std::string& projectPath,
-    const std::optional<std::string>& projectName,
+    const InitCommandOptions& options,
     const ConfigValues& config
 )
 {
     namespace fs = std::filesystem;
 
-    fs::path projectDirectory = projectPath;
-    std::string effectiveProjectName = projectName.has_value() ? *projectName : projectDirectory.filename().string();
+    fs::path projectDirectory = options.projectPath;
+    std::string effectiveProjectName = options.projectName.has_value() ? *options.projectName : projectDirectory.filename().string();
 
-    if (projectName.has_value()) {
-        projectDirectory /= *projectName;
+    if (options.projectName.has_value()) {
+        projectDirectory /= *options.projectName;
     }
 
     fs::create_directories(projectDirectory / "src");

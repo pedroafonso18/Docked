@@ -183,3 +183,11 @@ std::string Helpers::SanitizeProjectName(
 
     return sanitized.empty() ? "project" : sanitized;
 }
+
+void Helpers::PrintUsage() {
+    std::cout << "Docked\n\n"
+            << "Usage:\n"
+            << "  docked build\n"
+            << "  docked init [path] [--name project-name]\n"
+            << "  docked --help\n";
+}

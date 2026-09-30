@@ -1,198 +1,269 @@
 #include "build.h"
+
 #include "constants.h"
 #include "dependencies.h"
 #include "errors.h"
 #include "helpers.h"
-#include <cctype>
+
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <string>
+#include <vector>
 
-bool Build::Execute(
-    const ConfigValues& config
-)
+namespace
+{
+    namespace fs = std::filesystem;
+
+    constexpr const char* SOURCE_DIRECTORY = "src";
+    constexpr const char* BUILD_DIRECTORY = "build";
+    constexpr const char* OBJECT_DIRECTORY = "obj";
+
+    std::string GetCompiler(const ConfigValues& config)
+    {
+        switch (config.Compiler)
+        {
+            case Compiler::GCC:
+                return "g++";
+
+            case Compiler::CLANG:
+                return "clang++";
+
+            case Compiler::MSVC:
+                return "cl";
+
+            default:
+                return Build::DetectDefaultCompiler();
+        }
+    }
+
+    std::string GetStandardFlag(
+        const ConfigValues& config,
+        const std::string& compiler
+    )
+    {
+        if (compiler == "cl")
+        {
+            switch (config.Standard)
+            {
+                case Standard::S_14:
+                    return "/std:c++14";
+
+                case Standard::S_17:
+                    return "/std:c++17";
+
+                case Standard::S_20:
+                    return "/std:c++20";
+
+                case Standard::S_23:
+                    return "/std:c++latest";
+
+                default:
+                    return "/std:c++latest";
+            }
+        }
+
+        switch (config.Standard)
+        {
+            case Standard::S_14:
+                return "-std=c++14";
+
+            case Standard::S_17:
+                return "-std=c++17";
+
+            case Standard::S_20:
+                return "-std=c++20";
+
+            case Standard::S_23:
+                return "-std=c++23";
+
+            default:
+                return "-std=c++26";
+        }
+    }
+
+    void WriteCompilerConfiguration(
+        std::ofstream& ninjaFile,
+        const ConfigValues& config
+    )
+    {
+        const std::string compiler = GetCompiler(config);
+        const std::string standard = GetStandardFlag(config, compiler);
+
+        ninjaFile << "cxx = " << compiler << '\n';
+        ninjaFile << "cxxflags = " << standard << '\n';
+        ninjaFile << '\n';
+    }
+
+    void WriteRules(
+        std::ofstream& ninjaFile
+    )
+    {
+        ninjaFile << "rule cxx\n";
+        ninjaFile << "    command = $cxx $cxxflags -MMD -MF $out.d -c $in -o $out\n";
+        ninjaFile << "    depfile = $out.d\n";
+        ninjaFile << "    deps = gcc\n";
+        ninjaFile << '\n';
+
+        ninjaFile << "rule link\n";
+        ninjaFile << "    command = $cxx $in -o $out\n";
+        ninjaFile << '\n';
+    }
+
+    std::vector<std::string> WriteSourceBuilds(
+        std::ofstream& ninjaFile
+    )
+    {
+        std::vector<std::string> objectFiles;
+
+        const fs::path sourceDirectory = SOURCE_DIRECTORY;
+        const fs::path buildDirectory = BUILD_DIRECTORY;
+        const fs::path objectDirectory =
+            buildDirectory / OBJECT_DIRECTORY;
+
+        if (!fs::exists(sourceDirectory))
+            return objectFiles;
+
+        for (const auto& entry :
+             fs::recursive_directory_iterator(sourceDirectory))
+        {
+            if (!entry.is_regular_file())
+                continue;
+
+            const fs::path source = entry.path();
+
+            if (source.extension() != ".cpp")
+                continue;
+
+            const fs::path relativeSource =
+                fs::relative(source, sourceDirectory);
+
+            fs::path object =
+                objectDirectory / relativeSource;
+
+            object.replace_extension(".o");
+
+            fs::create_directories(object.parent_path());
+
+            const std::string ninjaObject =
+                fs::relative(object, buildDirectory).generic_string();
+
+            const std::string ninjaSource =
+                fs::relative(source, buildDirectory).generic_string();
+
+            ninjaFile
+                << "build "
+                << ninjaObject
+                << ": cxx "
+                << ninjaSource
+                << '\n';
+
+            objectFiles.push_back(ninjaObject);
+        }
+
+        return objectFiles;
+    }
+
+    void WriteTarget(
+        std::ofstream& ninjaFile,
+        const ConfigValues& config,
+        const std::vector<std::string>& objectFiles
+    )
+    {
+        const std::string projectName =
+            Helpers::SanitizeProjectName(
+                config.ProjectName.empty()
+                    ? "project"
+                    : config.ProjectName
+            );
+
+        ninjaFile << "build " << projectName << ": link";
+
+        for (const std::string& object : objectFiles)
+            ninjaFile << ' ' << object;
+
+        ninjaFile << '\n';
+        ninjaFile << '\n';
+        ninjaFile << "default " << projectName << '\n';
+    }
+}
+
+bool Build::Execute(const ConfigValues& config)
 {
     Dependencies::ResolveDependencies(config.Dependencies);
+
     GenerateNinjaFile(config);
+
     return ExecuteNinja();
 }
 
 void Build::GenerateNinjaFile(const ConfigValues& config)
 {
-    namespace fs = std::filesystem;
+    const std::filesystem::path buildDirectory = BUILD_DIRECTORY;
 
-    const fs::path sourceDirectory = "src";
-    const fs::path buildDirectory = "build";
-
-    fs::create_directories(buildDirectory / "obj");
-
-    std::ofstream ninjaFile(buildDirectory / "build.ninja");
-
-    if (!ninjaFile)
-        return;
-
-    switch (config.Compiler)
-    {
-        case Compiler::GCC:
-            ninjaFile << "cxx = g++\n";
-            break;
-
-        case Compiler::CLANG:
-            ninjaFile << "cxx = clang++\n";
-            break;
-
-        case Compiler::MSVC:
-            ninjaFile << "cxx = cl\n";
-            break;
-
-        default:
-            ninjaFile << "cxx = " << DetectDefaultCompiler() << '\n';
-            break;
-    }
-
-    ninjaFile << '\n';
-
-    ninjaFile << "cxxflags = ";
-
-    switch (config.Standard)
-    {
-        case Standard::S_14:
-            ninjaFile << "-std=c++14";
-            break;
-
-        case Standard::S_17:
-            ninjaFile << "-std=c++17";
-            break;
-
-        case Standard::S_20:
-            ninjaFile << "-std=c++20";
-            break;
-
-        case Standard::S_23:
-            ninjaFile << "-std=c++23";
-            break;
-
-        default:
-            ninjaFile << "-std=c++26";
-            break;
-    }
-
-    ninjaFile << '\n';
-    ninjaFile << '\n';
-
-    ninjaFile << "rule cxx\n";
-    ninjaFile << "    command = $cxx $cxxflags -MMD -MF $out.d -c $in -o $out\n";
-    ninjaFile << "    depfile = $out.d\n";
-    ninjaFile << "    deps = gcc\n";
-    ninjaFile << '\n';
-
-    ninjaFile << "rule link\n";
-    ninjaFile << "    command = $cxx $in -o $out\n";
-    ninjaFile << '\n';
-
-    std::vector<std::string> objectFiles;
-
-    for (const auto& entry :
-         fs::recursive_directory_iterator(sourceDirectory))
-    {
-        if (!entry.is_regular_file())
-            continue;
-
-        if (entry.path().extension() != ".cpp" && entry.path().extension() != ".c")
-            continue;
-
-        const fs::path relativeSource =
-            fs::relative(entry.path(), sourceDirectory);
-
-        const fs::path objectPath =
-            buildDirectory / "obj" /
-            relativeSource;
-
-        fs::path objectFile = objectPath;
-        objectFile.replace_extension(".o");
-
-        fs::create_directories(objectFile.parent_path());
-
-        const fs::path ninjaObject =
-            fs::relative(objectFile, buildDirectory);
-
-        const fs::path ninjaSource =
-            fs::relative(entry.path(), buildDirectory);
-
-        ninjaFile
-            << "build "
-            << ninjaObject.generic_string()
-            << ": cxx "
-            << ninjaSource.generic_string()
-            << '\n';
-
-        objectFiles.push_back(ninjaObject.generic_string());
-    }
-
-    ninjaFile << '\n';
-
-    const std::string projectName = Helpers::SanitizeProjectName(
-        config.ProjectName.empty() ? "project" : config.ProjectName
+    std::filesystem::create_directories(
+        buildDirectory / OBJECT_DIRECTORY
     );
 
-    ninjaFile << "build "
-              << projectName
-              << ": link";
+    std::ofstream ninjaFile(
+        buildDirectory / "build.ninja"
+    );
 
-    for (const std::string& object : objectFiles)
-    {
-        ninjaFile << ' ' << object;
-    }
+    if (!ninjaFile)
+        throw NoNinjaFileCreated();
 
-    ninjaFile << '\n';
-    ninjaFile << '\n';
+    WriteCompilerConfiguration(ninjaFile, config);
+    WriteRules(ninjaFile);
 
-    ninjaFile << "default "
-              << projectName
-              << '\n';
+    const std::vector<std::string> objectFiles =
+        WriteSourceBuilds(ninjaFile);
+
+    WriteTarget(ninjaFile, config, objectFiles);
 }
 
 std::string Build::DetectDefaultCompiler()
 {
-    #ifdef _WIN32
+#ifdef _WIN32
 
-        if (IsCompilerAvailable("cl"))
-            return "cl";
+    if (IsCompilerAvailable("cl"))
+        return "cl";
 
-        if (IsCompilerAvailable("clang++"))
-            return "clang++";
+    if (IsCompilerAvailable("clang++"))
+        return "clang++";
 
-        if (IsCompilerAvailable("g++"))
-            return "g++";
+    if (IsCompilerAvailable("g++"))
+        return "g++";
 
-    #elif defined(__linux__)
+#elif defined(__linux__)
 
-        if (IsCompilerAvailable("g++"))
-            return "g++";
+    if (IsCompilerAvailable("g++"))
+        return "g++";
 
-        if (IsCompilerAvailable("clang++"))
-            return "clang++";
+    if (IsCompilerAvailable("clang++"))
+        return "clang++";
 
-    #elif defined(__APPLE__)
+#elif defined(__APPLE__)
 
-        if (IsCompilerAvailable("clang++"))
-            return "clang++";
+    if (IsCompilerAvailable("clang++"))
+        return "clang++";
 
-        if (IsCompilerAvailable("g++"))
-            return "g++";
+    if (IsCompilerAvailable("g++"))
+        return "g++";
 
-    #endif
-        throw NoAvailableCompiler();
+#endif
+
+    throw NoAvailableCompiler();
 }
 
-bool Build::IsCompilerAvailable(
-    const std::string& compiler
-)
+bool Build::IsCompilerAvailable(const std::string& compiler)
 {
-    #ifdef _WIN32
-        const std::string command = "where " + compiler + " > nul 2>&1";
-    #else
-        const std::string command = "command -v " + compiler + " > /dev/null 2>&1";
-    #endif
+#ifdef _WIN32
+    const std::string command =
+        "where " + compiler + " > nul 2>&1";
+#else
+    const std::string command =
+        "command -v " + compiler + " > /dev/null 2>&1";
+#endif
 
     return std::system(command.c_str()) == 0;
 }

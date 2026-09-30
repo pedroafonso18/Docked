@@ -16,4 +16,15 @@ class NoAvailableCompiler : public std::exception
 
 //-----------------------------------------------------------------------------//
 
+class NoNinjaFileCreated : public std::exception
+{
+    public:
+        const char* what() const noexcept override
+        {
+            return "Couldn't create the ninja file.";
+        }    
+};
+
+//-----------------------------------------------------------------------------//
+
 #endif

@@ -15,6 +15,10 @@ class Config {
 
         ConfigValues GetValues();
 
+        static ConfigValues LoadConfigForPath(
+            const std::string& projectPath
+        );
+
     private:
         ConfigValues values;
 };

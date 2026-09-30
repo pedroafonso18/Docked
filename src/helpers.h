@@ -19,6 +19,8 @@ class Helpers {
         static std::string SanitizeProjectName(
             const std::string& name
         );
+
+        static void PrintUsage();
 };
 
 #endif

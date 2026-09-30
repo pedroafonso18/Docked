@@ -3,26 +3,20 @@
 
 #include "config.h"
 
-class Build {
+class Build
+{
     public:
         Build() = delete;
 
-        static bool Execute(
-            const ConfigValues& config
-        );
-        
-    private:
-        static void GenerateNinjaFile(
-          const ConfigValues& config
-        );
-
-        static bool ExecuteNinja();
+        static bool Execute(const ConfigValues& config);
 
         static std::string DetectDefaultCompiler();
-
+    private:
+        static void GenerateNinjaFile(const ConfigValues& config);
+        static bool ExecuteNinja();
         static bool IsCompilerAvailable(
             const std::string& compiler
         );
-    };
+};
 
 #endif
