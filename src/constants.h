@@ -35,9 +35,9 @@ struct Dependency {
 struct ConfigValues {
     std::string ProjectName;
     double ProjectVersion;
-    ProjectLanguage ProjectLanguage;
-    Compiler Compiler;
-    Standard Standard;
+    ProjectLanguage projectLanguage;
+    Compiler compiler;
+    Standard standard;
     std::vector<Dependency> Dependencies;
 };
 

@@ -21,7 +21,7 @@ namespace
 
     std::string GetCompiler(const ConfigValues& config)
     {
-        switch (config.Compiler)
+        switch (config.compiler)
         {
             case Compiler::GCC:
                 return "g++";
@@ -44,7 +44,7 @@ namespace
     {
         if (compiler == "cl")
         {
-            switch (config.Standard)
+            switch (config.standard)
             {
                 case Standard::S_14:
                     return "/std:c++14";
@@ -63,7 +63,7 @@ namespace
             }
         }
 
-        switch (config.Standard)
+        switch (config.standard)
         {
             case Standard::S_14:
                 return "-std=c++14";

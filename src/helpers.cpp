@@ -155,9 +155,9 @@ ConfigValues Helpers::ParseConfigFile(
 
         values.ProjectName = config["project"]["name"].value_or("");
         values.ProjectVersion = config["project"]["version"].value_or(0.0);
-        values.ProjectLanguage = ParseProjectLanguageInfo(config["project"]["language"].value_or("C++"));
-        values.Compiler = ParseCompilerInfo(config["project"]["compiler"].value_or("default"));
-        values.Standard = ParseStandardInfo(config["project"]["standard"].value_or(S_26));
+        values.projectLanguage = ParseProjectLanguageInfo(config["project"]["language"].value_or("C++"));
+        values.compiler = ParseCompilerInfo(config["project"]["compiler"].value_or("default"));
+        values.standard = ParseStandardInfo(config["project"]["standard"].value_or(S_26));
         values.Dependencies = ParseDependenciesInfo(config["dependencies"].as_table());
     } catch (const std::exception&) {
         return ConfigValues{};
