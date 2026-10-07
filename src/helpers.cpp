@@ -188,6 +188,7 @@ void Helpers::PrintUsage() {
     std::cout << "Docked\n\n"
             << "Usage:\n"
             << "  docked build\n"
+            << "  docked run\n"
             << "  docked init [path] [--name project-name]\n"
             << "  docked --help\n";
 }
