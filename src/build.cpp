@@ -21,6 +21,24 @@ namespace
 
     std::string GetCompiler(const ConfigValues& config)
     {
+        if (config.projectLanguage == ProjectLanguage::C)
+        {
+            switch (config.compiler)
+            {
+                case Compiler::GCC:
+                    return "gcc";
+
+                case Compiler::CLANG:
+                    return "clang";
+
+                case Compiler::MSVC:
+                    return "cl";
+
+                default:
+                    return Build::DetectDefaultCompiler(ProjectLanguage::C);
+            }
+        }
+
         switch (config.compiler)
         {
             case Compiler::GCC:
@@ -33,7 +51,7 @@ namespace
                 return "cl";
 
             default:
-                return Build::DetectDefaultCompiler();
+                return Build::DetectDefaultCompiler(ProjectLanguage::CPP);
         }
     }
 
@@ -42,10 +60,64 @@ namespace
         const std::string& compiler
     )
     {
+        if (config.projectLanguage == ProjectLanguage::C)
+        {
+            if (compiler == "cl")
+            {
+                switch (config.standard)
+                {
+                    case Standard::S_89:
+                    case Standard::S_90:
+                    case Standard::S_99:
+                    case Standard::S_11:
+                    case Standard::S_14:
+                        return "/std:c11";
+
+                    case Standard::S_17:
+                    case Standard::S_20:
+                        return "/std:c17";
+
+                    case Standard::S_23:
+                    case Standard::S_26:
+                    default:
+                        return "/std:clatest";
+                }
+            }
+
+            switch (config.standard)
+            {
+                case Standard::S_89:
+                    return "-std=c89";
+
+                case Standard::S_90:
+                    return "-std=c90";
+
+                case Standard::S_99:
+                    return "-std=c99";
+
+                case Standard::S_11:
+                case Standard::S_14:
+                    return "-std=c11";
+
+                case Standard::S_17:
+                case Standard::S_20:
+                    return "-std=c17";
+
+                case Standard::S_23:
+                case Standard::S_26:
+                default:
+                    return "-std=c23";
+            }
+        }
+
         if (compiler == "cl")
         {
             switch (config.standard)
             {
+                case Standard::S_89:
+                case Standard::S_90:
+                case Standard::S_99:
+                case Standard::S_11:
                 case Standard::S_14:
                     return "/std:c++14";
 
@@ -56,8 +128,7 @@ namespace
                     return "/std:c++20";
 
                 case Standard::S_23:
-                    return "/std:c++latest";
-
+                case Standard::S_26:
                 default:
                     return "/std:c++latest";
             }
@@ -65,6 +136,12 @@ namespace
 
         switch (config.standard)
         {
+            case Standard::S_89:
+            case Standard::S_90:
+            case Standard::S_99:
+            case Standard::S_11:
+                return "-std=c++11";
+
             case Standard::S_14:
                 return "-std=c++14";
 
@@ -77,6 +154,7 @@ namespace
             case Standard::S_23:
                 return "-std=c++23";
 
+            case Standard::S_26:
             default:
                 return "-std=c++26";
         }
@@ -90,28 +168,53 @@ namespace
         const std::string compiler = GetCompiler(config);
         const std::string standard = GetStandardFlag(config, compiler);
 
-        ninjaFile << "cxx = " << compiler << '\n';
-        ninjaFile << "cxxflags = " << standard << '\n';
+        if (config.projectLanguage == ProjectLanguage::C)
+        {
+            ninjaFile << "cc = " << compiler << '\n';
+            ninjaFile << "cflags = " << standard << '\n';
+        }
+        else
+        {
+            ninjaFile << "cxx = " << compiler << '\n';
+            ninjaFile << "cxxflags = " << standard << '\n';
+        }
         ninjaFile << '\n';
     }
 
     void WriteRules(
-        std::ofstream& ninjaFile
+        std::ofstream& ninjaFile,
+        const ConfigValues& config
     )
     {
-        ninjaFile << "rule cxx\n";
-        ninjaFile << "    command = $cxx $cxxflags -MMD -MF $out.d -c $in -o $out\n";
-        ninjaFile << "    depfile = $out.d\n";
-        ninjaFile << "    deps = gcc\n";
-        ninjaFile << '\n';
+        if (config.projectLanguage == ProjectLanguage::C)
+        {
+            ninjaFile << "rule cc\n";
+            ninjaFile << "    command = $cc $cflags -MMD -MF $out.d -c $in -o $out\n";
+            ninjaFile << "    depfile = $out.d\n";
+            ninjaFile << "    deps = gcc\n";
+            ninjaFile << '\n';
 
-        ninjaFile << "rule link\n";
-        ninjaFile << "    command = $cxx $in -o $out\n";
-        ninjaFile << '\n';
+            ninjaFile << "rule link\n";
+            ninjaFile << "    command = $cc $in -o $out\n";
+            ninjaFile << '\n';
+        }
+        else
+        {
+            ninjaFile << "rule cxx\n";
+            ninjaFile << "    command = $cxx $cxxflags -MMD -MF $out.d -c $in -o $out\n";
+            ninjaFile << "    depfile = $out.d\n";
+            ninjaFile << "    deps = gcc\n";
+            ninjaFile << '\n';
+
+            ninjaFile << "rule link\n";
+            ninjaFile << "    command = $cxx $in -o $out\n";
+            ninjaFile << '\n';
+        }
     }
 
     std::vector<std::string> WriteSourceBuilds(
-        std::ofstream& ninjaFile
+        std::ofstream& ninjaFile,
+        const ConfigValues& config
     )
     {
         std::vector<std::string> objectFiles;
@@ -124,6 +227,11 @@ namespace
         if (!fs::exists(sourceDirectory))
             return objectFiles;
 
+        const std::string targetExtension =
+            (config.projectLanguage == ProjectLanguage::C) ? ".c" : ".cpp";
+        const std::string ruleName =
+            (config.projectLanguage == ProjectLanguage::C) ? "cc" : "cxx";
+
         for (const auto& entry :
              fs::recursive_directory_iterator(sourceDirectory))
         {
@@ -132,7 +240,7 @@ namespace
 
             const fs::path source = entry.path();
 
-            if (source.extension() != ".cpp")
+            if (source.extension() != targetExtension)
                 continue;
 
             const fs::path relativeSource =
@@ -154,7 +262,9 @@ namespace
             ninjaFile
                 << "build "
                 << ninjaObject
-                << ": cxx "
+                << ": "
+                << ruleName
+                << ' '
                 << ninjaSource
                 << '\n';
 
@@ -213,16 +323,46 @@ void Build::GenerateNinjaFile(const ConfigValues& config)
         throw NoNinjaFileCreated();
 
     WriteCompilerConfiguration(ninjaFile, config);
-    WriteRules(ninjaFile);
+    WriteRules(ninjaFile, config);
 
     const std::vector<std::string> objectFiles =
-        WriteSourceBuilds(ninjaFile);
+        WriteSourceBuilds(ninjaFile, config);
 
     WriteTarget(ninjaFile, config, objectFiles);
 }
 
-std::string Build::DetectDefaultCompiler()
+std::string Build::DetectDefaultCompiler(ProjectLanguage language)
 {
+    if (language == ProjectLanguage::C)
+    {
+#ifdef _WIN32
+        if (IsCompilerAvailable("cl"))
+            return "cl";
+
+        if (IsCompilerAvailable("clang"))
+            return "clang";
+
+        if (IsCompilerAvailable("gcc"))
+            return "gcc";
+
+#elif defined(__linux__)
+        if (IsCompilerAvailable("gcc"))
+            return "gcc";
+
+        if (IsCompilerAvailable("clang"))
+            return "clang";
+
+#elif defined(__APPLE__)
+        if (IsCompilerAvailable("clang"))
+            return "clang";
+
+        if (IsCompilerAvailable("gcc"))
+            return "gcc";
+
+#endif
+        throw NoAvailableCompiler();
+    }
+
 #ifdef _WIN32
 
     if (IsCompilerAvailable("cl"))

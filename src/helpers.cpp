@@ -36,7 +36,7 @@ Compiler ParseCompilerInfo(
 {
     const std::string normalizedCompiler = ToUpper(compilerString);
 
-    if (normalizedCompiler == "CLANG") {
+    if (normalizedCompiler == "CLANG" || normalizedCompiler == "CLANG++") {
         return CLANG;
     } else if (normalizedCompiler == "GCC" || normalizedCompiler == "G++") {
         return GCC;
@@ -52,6 +52,14 @@ Standard ParseStandardInfo(
 )
 {
     switch (standardValue) {
+        case 89:
+            return S_89;
+        case 90:
+            return S_90;
+        case 99:
+            return S_99;
+        case 11:
+            return S_11;
         case 14:
             return S_14;
         case 17:

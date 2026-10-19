@@ -10,7 +10,9 @@ class Build
 
         static bool Execute(const ConfigValues& config);
 
-        static std::string DetectDefaultCompiler();
+        static std::string DetectDefaultCompiler(
+            ProjectLanguage language = ProjectLanguage::CPP
+        );
     private:
         static void GenerateNinjaFile(const ConfigValues& config);
         static bool ExecuteNinja();

@@ -19,6 +19,10 @@ enum Compiler {
 };
 
 enum Standard {
+    S_89,
+    S_90,
+    S_99,
+    S_11,
     S_14,
     S_17,
     S_20,

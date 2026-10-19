@@ -3,9 +3,9 @@ name = "Test Project"
 version = 1.0
 language = "C++" # Possible options : "C" or "C++"
 compiler = "default" 
-# Possible options: "G++", "MSVC", "CLANG", if not present will go with default
+# Possible options: "GCC", "G++", "MSVC", "CLANG", if not present will go with default
 standard = 17
-# Language standard, Possible options: 14, 17, 20, 23, 26, if not present will go with latest
+# Language standard, Possible options: 89, 90, 99, 11, 14, 17, 20, 23, 26, if not present will go with latest
 
 [dependencies]
 
