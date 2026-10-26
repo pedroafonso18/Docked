@@ -34,6 +34,8 @@ struct Dependency {
     std::string dependencyName;
     std::string gitUrl;
     std::string gitTag;
+    std::vector<std::string> linkFlags;
+    std::vector<std::string> includeDirs;
 };
 
 struct ConfigValues {
@@ -42,6 +44,8 @@ struct ConfigValues {
     ProjectLanguage projectLanguage;
     Compiler compiler;
     Standard standard;
+    std::vector<std::string> LinkFlags;
+    std::vector<std::string> IncludeDirs;
     std::vector<Dependency> Dependencies;
 };
 

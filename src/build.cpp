@@ -5,6 +5,7 @@
 #include "errors.h"
 #include "helpers.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -160,24 +161,115 @@ namespace
         }
     }
 
+    std::string BuildIncludeFlags(
+        const ConfigValues& config,
+        const DependencyArtifacts& artifacts,
+        const fs::path& buildDirectory
+    )
+    {
+        std::string flags;
+        std::vector<std::string> allDirs = artifacts.includeDirectories;
+        for (const auto& inc : config.IncludeDirs)
+        {
+            if (std::find(allDirs.begin(), allDirs.end(), inc) == allDirs.end())
+            {
+                allDirs.push_back(inc);
+            }
+        }
+
+        for (const auto& dir : allDirs)
+        {
+            fs::path p(dir);
+            std::string formatted;
+            if (p.is_absolute())
+            {
+                formatted = p.generic_string();
+            }
+            else
+            {
+                formatted = fs::relative(p, buildDirectory).generic_string();
+            }
+            flags += " -I" + formatted;
+        }
+
+        return flags;
+    }
+
+    std::string BuildLinkFlags(
+        const ConfigValues& config,
+        const DependencyArtifacts& artifacts,
+        const fs::path& buildDirectory
+    )
+    {
+        std::string flags;
+
+        for (const auto& lib : artifacts.staticLibraries)
+        {
+            fs::path p(lib);
+            std::string formatted;
+            if (p.is_absolute())
+            {
+                formatted = p.generic_string();
+            }
+            else
+            {
+                formatted = fs::relative(p, buildDirectory).generic_string();
+            }
+
+            if (!flags.empty())
+            {
+                flags += ' ';
+            }
+            flags += formatted;
+        }
+
+        for (const auto& flag : artifacts.linkFlags)
+        {
+            if (!flags.empty())
+            {
+                flags += ' ';
+            }
+            flags += flag;
+        }
+
+        for (const auto& flag : config.LinkFlags)
+        {
+            if (!flags.empty())
+            {
+                flags += ' ';
+            }
+            flags += flag;
+        }
+
+        return flags;
+    }
+
     void WriteCompilerConfiguration(
         std::ofstream& ninjaFile,
-        const ConfigValues& config
+        const ConfigValues& config,
+        const DependencyArtifacts& artifacts
     )
     {
         const std::string compiler = GetCompiler(config);
         const std::string standard = GetStandardFlag(config, compiler);
+        const fs::path buildDirectory = BUILD_DIRECTORY;
+        const std::string includeFlags =
+            BuildIncludeFlags(config, artifacts, buildDirectory);
+        const std::string ldflags =
+            BuildLinkFlags(config, artifacts, buildDirectory);
 
         if (config.projectLanguage == ProjectLanguage::C)
         {
             ninjaFile << "cc = " << compiler << '\n';
-            ninjaFile << "cflags = " << standard << '\n';
+            ninjaFile << "cflags = " << standard << includeFlags << '\n';
         }
         else
         {
             ninjaFile << "cxx = " << compiler << '\n';
-            ninjaFile << "cxxflags = " << standard << '\n';
+            ninjaFile << "cxxflags = " << standard << includeFlags << '\n';
         }
+
+        ninjaFile << "ldflags = " << ldflags << '\n';
         ninjaFile << '\n';
     }
 
@@ -195,7 +287,7 @@ namespace
             ninjaFile << '\n';
 
             ninjaFile << "rule link\n";
-            ninjaFile << "    command = $cc $in -o $out\n";
+            ninjaFile << "    command = $cc $in -o $out $ldflags\n";
             ninjaFile << '\n';
         }
         else
@@ -207,7 +299,7 @@ namespace
             ninjaFile << '\n';
 
             ninjaFile << "rule link\n";
-            ninjaFile << "    command = $cxx $in -o $out\n";
+            ninjaFile << "    command = $cxx $in -o $out $ldflags\n";
             ninjaFile << '\n';
         }
     }
@@ -301,6 +393,7 @@ namespace
 bool Build::Execute(const ConfigValues& config)
 {
     Dependencies::ResolveDependencies(config.Dependencies);
+    Dependencies::BuildDependencies(config.Dependencies);
 
     GenerateNinjaFile(config);
 
@@ -322,7 +415,10 @@ void Build::GenerateNinjaFile(const ConfigValues& config)
     if (!ninjaFile)
         throw NoNinjaFileCreated();
 
-    WriteCompilerConfiguration(ninjaFile, config);
+    const DependencyArtifacts artifacts =
+        Dependencies::CollectArtifacts(config.Dependencies);
+
+    WriteCompilerConfiguration(ninjaFile, config, artifacts);
     WriteRules(ninjaFile, config);
 
     const std::vector<std::string> objectFiles =

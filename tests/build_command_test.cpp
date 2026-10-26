@@ -206,3 +206,138 @@ TEST(BuildCommand, DetectDefaultCompilerSupportsC)
     EXPECT_TRUE(cppCompiler == "g++" || cppCompiler == "clang++");
 #endif
 }
+
+TEST(BuildCommand, EmitsDefaultLibFlagForDependency)
+{
+    namespace fs = std::filesystem;
+
+    const fs::path tempRoot = test_utils::MakeTempDirectory("docked-dep-flags");
+    test_utils::ScopedCurrentPath currentPath(tempRoot);
+
+    test_utils::WriteTextFile(
+        tempRoot / "src" / "main.cpp",
+        "int main() { return 0; }\n"
+    );
+
+    ConfigValues config{};
+    config.ProjectName = "sample_dep_app";
+    config.compiler = Compiler::DEFAULT;
+    config.standard = Standard::S_17;
+
+    Dependency dep;
+    dep.dependencyName = "samplelib";
+    dep.linkFlags = { "-lextra" };
+    dep.includeDirs = { "/sample/include" };
+    config.Dependencies.push_back(dep);
+
+    Commands::ExecuteBuildCommand(config);
+
+    std::ifstream ninjaStream(tempRoot / "build" / "build.ninja");
+    const std::string ninjaContent{
+        std::istreambuf_iterator<char>(ninjaStream),
+        std::istreambuf_iterator<char>()
+    };
+
+    EXPECT_NE(ninjaContent.find("-lsamplelib"), std::string::npos);
+    EXPECT_NE(ninjaContent.find("-lextra"), std::string::npos);
+    EXPECT_NE(ninjaContent.find("-I/sample/include"), std::string::npos);
+}
+
+TEST(BuildCommand, ParsesAndEmitsProjectLibsAndIncludeDirs)
+{
+    namespace fs = std::filesystem;
+
+    const fs::path tempRoot = test_utils::MakeTempDirectory("docked-project-flags");
+    test_utils::ScopedCurrentPath currentPath(tempRoot);
+
+    test_utils::WriteTextFile(
+        tempRoot / "src" / "main.cpp",
+        "int main() { return 0; }\n"
+    );
+
+    ConfigValues config{};
+    config.ProjectName = "custom_flags_app";
+    config.compiler = Compiler::DEFAULT;
+    config.standard = Standard::S_17;
+    config.LinkFlags = { "-lcustomlib", "-L/custom/lib" };
+    config.IncludeDirs = { "/custom/include" };
+
+    Commands::ExecuteBuildCommand(config);
+
+    std::ifstream ninjaStream(tempRoot / "build" / "build.ninja");
+    const std::string ninjaContent{
+        std::istreambuf_iterator<char>(ninjaStream),
+        std::istreambuf_iterator<char>()
+    };
+
+    EXPECT_NE(ninjaContent.find("-I/custom/include"), std::string::npos);
+    EXPECT_NE(ninjaContent.find("-lcustomlib"), std::string::npos);
+    EXPECT_NE(ninjaContent.find("-L/custom/lib"), std::string::npos);
+}
+
+TEST(BuildCommand, BuildsAndLinksLocalDependencyEndToEnd)
+{
+    namespace fs = std::filesystem;
+
+    const fs::path tempRoot = test_utils::MakeTempDirectory("docked-local-dep");
+    test_utils::ScopedCurrentPath currentPath(tempRoot);
+
+    const fs::path depRoot = tempRoot / ".docked" / "dependencies" / "mathlib";
+
+    test_utils::WriteTextFile(
+        depRoot / "include" / "mathlib.h",
+        "#ifndef MATHLIB_H\n"
+        "#define MATHLIB_H\n"
+        "#ifdef __cplusplus\n"
+        "extern \"C\" {\n"
+        "#endif\n"
+        "int math_add(int a, int b);\n"
+        "#ifdef __cplusplus\n"
+        "}\n"
+        "#endif\n"
+        "#endif\n"
+    );
+
+    test_utils::WriteTextFile(
+        depRoot / "src" / "math.c",
+        "#include \"mathlib.h\"\nint math_add(int a, int b) { return a + b; }\n"
+    );
+
+    test_utils::WriteTextFile(
+        depRoot / "CMakeLists.txt",
+        "cmake_minimum_required(VERSION 3.15)\n"
+        "project(mathlib C)\n"
+        "add_library(mathlib STATIC src/math.c)\n"
+        "target_include_directories(mathlib PUBLIC include)\n"
+    );
+
+    test_utils::WriteTextFile(
+        tempRoot / "src" / "main.cpp",
+        "#include <mathlib.h>\n"
+        "int main() {\n"
+        "    return math_add(10, 20) == 30 ? 0 : 1;\n"
+        "}\n"
+    );
+
+    ConfigValues config{};
+    config.ProjectName = "dep_test_app";
+    config.compiler = Compiler::DEFAULT;
+    config.standard = Standard::S_17;
+
+    Dependency mathlibDep;
+    mathlibDep.dependencyName = "mathlib";
+    config.Dependencies.push_back(mathlibDep);
+
+    Commands::ExecuteBuildCommand(config);
+
+#ifdef _WIN32
+    const fs::path executable = tempRoot / "build" / "dep_test_app.exe";
+#else
+    const fs::path executable = tempRoot / "build" / "dep_test_app";
+#endif
+
+    EXPECT_TRUE(fs::exists(executable));
+
+    const int exitCode = std::system(executable.string().c_str());
+    EXPECT_EQ(exitCode, 0);
+}
