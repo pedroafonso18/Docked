@@ -32,6 +32,8 @@ add_library(
     ${DOCKED_SOURCES}
 )
 
+target_compile_features(docked_core PUBLIC cxx_std_17)
+
 target_include_directories(
     docked_core PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
