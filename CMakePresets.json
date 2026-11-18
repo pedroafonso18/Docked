@@ -1,0 +1,28 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "vcpkg",
+      "displayName": "Build with vcpkg dependencies",
+      "binaryDir": "${sourceDir}/build/vcpkg",
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "vcpkg",
+      "configurePreset": "vcpkg",
+      "configuration": "Release"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "vcpkg",
+      "configurePreset": "vcpkg",
+      "configuration": "Release",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

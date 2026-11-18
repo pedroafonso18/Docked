@@ -69,6 +69,16 @@ brew install cmake ninja boost git
 
 ## Compilação e Instalação
 
+Para instalar o Boost automaticamente com vcpkg, defina `VCPKG_ROOT` com o caminho da instalação do vcpkg e execute os comandos abaixo na pasta do repositório (CMake 3.21 ou mais recente):
+
+```bash
+cmake --preset vcpkg
+cmake --build --preset vcpkg
+ctest --preset vcpkg
+```
+
+Com Visual Studio no Windows, o executável fica em `build/vcpkg/Release/docked.exe`.
+
 Clone o repositório e compile o projeto utilizando o CMake:
 
 ```bash

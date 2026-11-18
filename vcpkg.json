@@ -1,0 +1,7 @@
+{
+  "name": "docked",
+  "version-string": "1.0",
+  "dependencies": [
+    "boost-program-options"
+  ]
+}

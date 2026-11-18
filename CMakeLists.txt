@@ -5,7 +5,7 @@ project(
     LANGUAGES CXX
 )
 
-find_package(Boost REQUIRED COMPONENTS program_options)
+find_package(Boost CONFIG REQUIRED COMPONENTS program_options)
 find_package(GTest QUIET)
 
 if (NOT GTest_FOUND)
